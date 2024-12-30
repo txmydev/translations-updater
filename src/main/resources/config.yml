@@ -1,0 +1,18 @@
+####################################################
+# Your PAT Token (Personal Access Token)
+# From GitHub
+####################################################
+GITHUB_TOKEN: "XXXXXXXXXXXXXXXXXXX"
+GITHUB_REPOSITORY: "YourOrganization/YourRepository"
+####################################################
+
+settings:
+  run-on-startup: true
+  create-old-file-copies: true
+
+  # Commands to reload plugins after
+  # for example
+  # commands-after-updating:
+  #   - apple reload
+  commands-after-updating:
+    - 'apple reload'

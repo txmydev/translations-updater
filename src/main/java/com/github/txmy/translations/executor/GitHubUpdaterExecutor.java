@@ -1,9 +1,13 @@
-package com.github.txmy.translations;
+package com.github.txmy.translations.executor;
 
+import com.github.txmy.translations.Credentials;
+import com.github.txmy.translations.utils.HttpUtils;
+import com.github.txmy.translations.utils.LogUtils;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
+import org.bukkit.Bukkit;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +20,6 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
 
     private static final boolean DEBUG = false;
 
-    private static final Logger LOGGER = Logger.getLogger("GitHubUpdaterExecutor");
     private static final String BASE_URL = "https://api.github.com/repos/";
 
     private final Credentials credentials;
@@ -55,7 +58,7 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
             result.result = Result.SUCCESS;
 
             if (DEBUG) {
-                LOGGER.info(String.format("repos: found %d available repositories", resultObject.entrySet().size()));
+                LogUtils.log(String.format("repos: found %d available repositories", resultObject.entrySet().size()));
             }
         } catch (IOException exception) {
             result.result = Result.FAILED;
@@ -121,7 +124,7 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
             result.result = Result.FAILED;
             result.object = e.getLocalizedMessage();
 
-            LOGGER.severe("error while decoding base64: " + e.getLocalizedMessage());
+            LogUtils.error("error while decoding base64: " + e.getLocalizedMessage());
         }
 
         return result;
@@ -138,8 +141,13 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
         Map<String, String> map = Maps.newHashMap();
         fetchDirectoriesResult.object.entrySet().forEach(entry -> {
             String mainFolder = entry.getKey();
-            String treeLink = entry.getValue().getAsString();
+            // check whether the plugin is on the server or not.
+            if (Bukkit.getPluginManager().getPlugin(mainFolder) == null) {
+                LogUtils.log(mainFolder + " is not on the server, skipping its language files.");
+                return;
+            }
 
+            String treeLink = entry.getValue().getAsString();
             PhaseResult<JsonObject> folderLinksResult = goThroughTree(treeLink);
             if (folderLinksResult.hasFailed()) {
                 error(folderLinksResult, "grabbing " + mainFolder + " folder links");
@@ -175,7 +183,7 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
             err = "unknown";
         }
 
-        LOGGER.severe(String.format("error: catched error while fetching %s of the repository: %s", phaseDescription, err));
+        LogUtils.error(String.format("error: catched error while fetching %s of the repository: %s", phaseDescription, err));
     }
 
 

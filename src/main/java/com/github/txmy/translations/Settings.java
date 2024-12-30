@@ -1,4 +1,6 @@
 package com.github.txmy.translations;
 
-public record Settings() {
+import java.util.List;
+
+public record Settings(boolean runOnStartup, boolean createCopiesOfOldFiles, List<String> commandsAfterUpdate) {
 }

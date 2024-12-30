@@ -1,4 +1,4 @@
-package com.github.txmy.translations;
+package com.github.txmy.translations.executor;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

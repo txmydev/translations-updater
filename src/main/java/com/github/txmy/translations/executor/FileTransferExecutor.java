@@ -1,6 +1,7 @@
-package com.github.txmy.translations;
+package com.github.txmy.translations.executor;
 
-import lombok.AllArgsConstructor;
+import com.github.txmy.translations.Settings;
+import com.github.txmy.translations.utils.LogUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,14 +9,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class FileTransferExecutor implements IExecutor<Map<String, Boolean>> {
 
-    private static final Logger LOGGER = Logger.getLogger("FileTransferExecutor");
+    private final Path pluginsFolderPath;
+    private final Settings settings;
 
-    private Path pluginsFolderPath;
-    private Settings settings;
     private Map<String, String> files;
 
     public FileTransferExecutor(Path pluginsFolderPath, Settings settings) {
@@ -79,7 +78,7 @@ public class FileTransferExecutor implements IExecutor<Map<String, Boolean>> {
             err = "unknown";
         }
 
-        LOGGER.severe(String.format("error: catched error while fetching %s of the repository: %s", phaseDescription, err));
+        LogUtils.error(String.format("error: catched error while fetching %s of the repository: %s", phaseDescription, err));
     }
 
 }

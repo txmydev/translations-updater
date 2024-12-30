@@ -1,5 +1,6 @@
-package com.github.txmy.translations;
+package com.github.txmy.translations.utils;
 
+import com.github.txmy.translations.Credentials;
 import com.google.gson.*;
 
 import java.io.IOException;

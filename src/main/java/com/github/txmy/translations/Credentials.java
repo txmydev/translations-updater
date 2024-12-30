@@ -1,4 +1,4 @@
 package com.github.txmy.translations;
 
-public class Credentials {
-}
+
+public record Credentials(String token, String repository) {}

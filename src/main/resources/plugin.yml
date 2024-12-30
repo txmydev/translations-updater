@@ -1,0 +1,13 @@
+main: com.github.txmy.translations.TranslationsPlugin
+name: translations-updater
+version: 1.0-SNAPSHOT
+author: txmy
+load: STARTUP
+loadbefore:
+  - Apple
+  - Anas
+  - Sumon
+
+commands:
+  tsu:
+    description: Main command for the Translations Updater Plugin.
