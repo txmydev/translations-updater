@@ -6,23 +6,24 @@ import com.github.txmy.translations.utils.LogUtils;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import lombok.RequiredArgsConstructor;
 import org.bukkit.Bukkit;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
-import java.util.logging.Logger;
 
-@RequiredArgsConstructor
 public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
 
     private static final boolean DEBUG = false;
 
-    private static final String BASE_URL = "https://api.github.com/repos/";
+    public static final String BASE_URL = "https://api.github.com/repos/";
 
     private final Credentials credentials;
+
+    public GitHubUpdaterExecutor(Credentials credentials) {
+        this.credentials = credentials;
+    }
 
     private PhaseResult<JsonObject> fetchDirectories() {
         PhaseResult<JsonObject> result = new PhaseResult<>();
@@ -84,8 +85,9 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
             JsonArray treeArray = object.get("tree").getAsJsonArray();
             treeArray.forEach(element -> {
                 JsonObject fileObject = element.getAsJsonObject();
+                boolean isSubDirectory = fileObject.has("type") && "tree".equals(fileObject.get("type").getAsString());
                 if (fileObject.has("path") && fileObject.has("url")) {
-                    resultObject.addProperty(fileObject.get("path").getAsString(), fileObject.get("url").getAsString());
+                    resultObject.addProperty((isSubDirectory ? "$subdir_" : "") + fileObject.get("path").getAsString(), fileObject.get("url").getAsString());
                 }
             });
 
@@ -130,15 +132,16 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
         return result;
     }
 
+
     @Override
     public Map<String, String> execute() {
+        Map<String, String> map = Maps.newHashMap();
         PhaseResult<JsonObject> fetchDirectoriesResult = fetchDirectories();
         if (fetchDirectoriesResult.hasFailed()) {
             error(fetchDirectoriesResult, "fetching github directories");
             return Maps.newHashMap();
         }
 
-        Map<String, String> map = Maps.newHashMap();
         fetchDirectoriesResult.object.entrySet().forEach(entry -> {
             String mainFolder = entry.getKey();
             // check whether the plugin is on the server or not.
@@ -157,12 +160,27 @@ public class GitHubUpdaterExecutor implements IExecutor<Map<String, String>> {
             JsonObject folderLinks = folderLinksResult.object;
             processFolderLinks(map, mainFolder, folderLinks);
         });
+
         return map;
     }
+
 
     private void processFolderLinks(Map<String, String> map, String mainFolder, JsonObject folderLinks) {
         folderLinks.entrySet().forEach(entry -> {
             String path = entry.getKey();
+
+            if (path.startsWith("$subdir_")) {
+                String subDirectoryName = path.replaceFirst("\\$subdir_", "");
+                PhaseResult<JsonObject> subDirectoryFiles = goThroughTree(entry.getValue().getAsString());
+                if (subDirectoryFiles.hasFailed()) {
+                    error(subDirectoryFiles, "going through sub-directory " + mainFolder + "/" + subDirectoryName);
+                    return;
+                }
+
+                processFolderLinks(map, mainFolder + "/" + subDirectoryName, subDirectoryFiles.object);
+                return;
+            }
+
             String fileLink = entry.getValue().getAsString();
 
             PhaseResult<String> result = fetchFileContents(fileLink);

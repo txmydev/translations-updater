@@ -4,31 +4,26 @@ import com.github.txmy.translations.Credentials;
 import com.github.txmy.translations.Settings;
 import com.github.txmy.translations.executor.FileTransferExecutor;
 import com.github.txmy.translations.executor.GitHubUpdaterExecutor;
-import com.github.txmy.translations.threshold.SimpleThresholdChecker;
+import com.github.txmy.translations.threshold.SimpleCommitChecker;
 import com.github.txmy.translations.utils.LogUtils;
 import com.google.common.collect.Maps;
-import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.time.Duration;
+import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SimpleTranslationsUpdaterService implements TranslationsUpdaterService {
-
-    private static final Duration THRESHOLD = Duration.ofMinutes(5L);
 
     private final GitHubUpdaterExecutor gitHubUpdaterExecutor;
     private final FileTransferExecutor fileTransferExecutor;
 
-    private final SimpleThresholdChecker checker;
+    private final SimpleCommitChecker checker;
 
     public SimpleTranslationsUpdaterService(JavaPlugin plugin, Credentials credentials, Settings settings) {
         this.gitHubUpdaterExecutor = new GitHubUpdaterExecutor(credentials);
         this.fileTransferExecutor = new FileTransferExecutor(plugin.getDataFolder().toPath().getParent(), settings);
 
-        this.checker = new SimpleThresholdChecker(plugin.getDataFolder().toPath());
+        this.checker = new SimpleCommitChecker(plugin, credentials);
     }
 
     @Override
@@ -43,26 +38,27 @@ public class SimpleTranslationsUpdaterService implements TranslationsUpdaterServ
 
     @Override
     public Map<String, Boolean> update(boolean force) {
-        if (checker.hasCooldown(THRESHOLD) && !force) {
-            LogUtils.log("won't update, cooldown still active.");
+
+        if (!checker.needsUpdate() && !force) {
+            LogUtils.log("Already using the latest version (Commit Checker)");
             return Maps.newHashMap();
         }
 
-        CompletableFuture.runAsync(checker::saveNow);
-
         Map<String, Boolean> map = fileTransferExecutor.withFiles(gitHubUpdaterExecutor.execute())
                 .execute();
-
         StringBuilder builder = new StringBuilder();
-        builder.append(LogUtils.translate("performed update, results: "));
-        AtomicBoolean first = new AtomicBoolean(true);
+        builder.append("\nFiles Updated:\n");
         map.forEach((file, result) -> {
-            builder.append(ChatColor.WHITE).append(first.getAndSet(false) ? "" : ",").append(result ? ChatColor.GREEN.toString() : ChatColor.DARK_RED.toString())
-                    .append(file);
-
-
+            builder.append(" - ").append(file).append(": ").append(result ? "Success" : "Failure").append("\n");
         });
         LogUtils.log(builder.toString());
+
+        try {
+            checker.saveLastCommitId();
+        } catch (IOException e) {
+            LogUtils.error("error while saving last commit-id: ");
+            e.printStackTrace();
+        }
 
         return map;
     }

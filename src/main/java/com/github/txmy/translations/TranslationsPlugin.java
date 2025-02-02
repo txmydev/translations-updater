@@ -17,8 +17,9 @@ public class TranslationsPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        LogUtils.setLogger(this.getLogger());
+
         LogUtils.log("Starting up...");
-        LogUtils.log("Validating &fGitHub Token&e...");
         saveDefaultConfig();
 
         Credentials credentials = new Credentials(getConfig().getString("GITHUB_TOKEN", DEFAULT_TOKEN), getConfig().getString("GITHUB_REPOSITORY", "None"));

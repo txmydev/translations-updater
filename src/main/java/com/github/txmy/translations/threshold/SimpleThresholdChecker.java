@@ -34,10 +34,6 @@ public class SimpleThresholdChecker {
 
     }
 
-    public boolean hasCooldown(Duration threshold) {
-        return lastUpdate + threshold.toMillis() > System.currentTimeMillis();
-    }
-
     public long readLast() throws IOException {
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             String l = reader.lines().collect(Collectors.joining());
@@ -48,6 +44,7 @@ public class SimpleThresholdChecker {
             }
         }
     }
+
 
     public void saveNow() {
         try {

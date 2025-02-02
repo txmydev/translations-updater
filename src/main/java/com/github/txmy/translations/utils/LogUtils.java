@@ -1,21 +1,25 @@
 package com.github.txmy.translations.utils;
 
-import org.bukkit.Bukkit;
+import lombok.Setter;
 import org.bukkit.ChatColor;
+
+import java.util.logging.Logger;
 
 public class LogUtils {
 
-    private static final String PREFIX = "&7[&atranslations-updater&7] &e";
+    @Setter
+    private static Logger logger;
+
 
     public static void log(String... messages) {
         for (String message : messages) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', PREFIX + message));
+            logger.info(ChatColor.stripColor(translate(message)));
         }
     }
 
     public static void error(String... messages) {
         for (String message : messages) {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.translateAlternateColorCodes('&', PREFIX + "&c" + message));
+            logger.severe(ChatColor.stripColor(translate(message)));
         }
     }
 
